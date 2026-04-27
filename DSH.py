@@ -37,7 +37,7 @@ def get_config():
         # "dataset": "nuswide_21",
         # "dataset": "nuswide_21_m",
         # "dataset": "nuswide_81_m",
-        "epoch": 250,
+        "epoch": 100,
         "test_map": 15,
         "save_path": "save/DSH",
         # "device":torch.device("cpu"),
