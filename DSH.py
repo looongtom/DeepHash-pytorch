@@ -41,7 +41,7 @@ def get_config():
         "test_map": 15,
         "save_path": "save/DSH",
         # "device":torch.device("cpu"),
-        "device": torch.device("cuda:1"),
+        "device": torch.device("cuda:0"),
         "bit_list": [48],
     }
     config = config_dataset(config)
