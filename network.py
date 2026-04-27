@@ -6,7 +6,9 @@ class AlexNet(nn.Module):
     def __init__(self, hash_bit, pretrained=True):
         super(AlexNet, self).__init__()
 
-        model_alexnet = models.alexnet(pretrained=pretrained)
+        # torchvision>=0.13 uses `weights=` instead of `pretrained=`
+        weights = models.AlexNet_Weights.DEFAULT if pretrained else None
+        model_alexnet = models.alexnet(weights=weights)
         self.features = model_alexnet.features
         cl1 = nn.Linear(256 * 6 * 6, 4096)
         cl1.weight = model_alexnet.classifier[1].weight
@@ -40,7 +42,15 @@ resnet_dict = {"ResNet18": models.resnet18, "ResNet34": models.resnet34, "ResNet
 class ResNet(nn.Module):
     def __init__(self, hash_bit, res_model="ResNet50"):
         super(ResNet, self).__init__()
-        model_resnet = resnet_dict[res_model](pretrained=True)
+        # torchvision>=0.13 uses `weights=` instead of `pretrained=`
+        weights_map = {
+            "ResNet18": models.ResNet18_Weights.DEFAULT,
+            "ResNet34": models.ResNet34_Weights.DEFAULT,
+            "ResNet50": models.ResNet50_Weights.DEFAULT,
+            "ResNet101": models.ResNet101_Weights.DEFAULT,
+            "ResNet152": models.ResNet152_Weights.DEFAULT,
+        }
+        model_resnet = resnet_dict[res_model](weights=weights_map.get(res_model))
         self.conv1 = model_resnet.conv1
         self.bn1 = model_resnet.bn1
         self.relu = model_resnet.relu

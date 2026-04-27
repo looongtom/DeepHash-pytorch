@@ -42,21 +42,49 @@ class ResNet(nn.Module):
 device = torch.device('cpu')
 from torchvision import transforms
 
-img_dir = "/dataset/imagenet/"
-with open("./../../data/imagenet/database.txt", "r") as f:
-    trn_img_path = np.array([img_dir + item.split(" ")[0] for item in f.readlines()])
-save_path = "/data/xyj/2021/DeepHash-pytorch/save/DPSH/imagenet_64bits_0.8824931967229359/"
-trn_binary = np.load(save_path + "trn_binary.npy")
-# # 加载模型
-print("加载模型中。。。。。。。")
-# 这里写模型路径
-model_name = 'model.pt'
-model_state_dict = torch.load(save_path + model_name, map_location=device)
-# 哈希码长度64
-model = ResNet(64)
-model.load_state_dict(model_state_dict)
-model.eval()
-print("模型加载成功")
+from pathlib import Path
+
+# Resolve paths relative to this repository checkout, so the demo
+# doesn't depend on machine-specific absolute paths.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Where ImageNet images actually live (override if needed).
+# The `database.txt` entries are paths like `image/xxx.JPEG`.
+IMAGENET_ROOT = Path(os.environ.get("IMAGENET_ROOT", str(REPO_ROOT / "data" / "imagenet")))
+
+DATABASE_PATH = REPO_ROOT / "data" / "imagenet" / "database.txt"
+with open(DATABASE_PATH, "r") as f:
+    trn_img_path = np.array([str(IMAGENET_ROOT / item.split(" ")[0]) for item in f.readlines()])
+
+# Where trained hash codes + model live (override if needed).
+SAVE_PATH = Path(os.environ.get("DEEPHASH_SAVE_PATH", str(REPO_ROOT / "save")))
+trn_binary = None
+model = None
+
+
+def _ensure_assets_loaded():
+    global trn_binary, model
+    if trn_binary is not None and model is not None:
+        return
+
+    trn_binary_path = SAVE_PATH / "trn_binary.npy"
+    model_path = SAVE_PATH / "model.pt"
+    if not trn_binary_path.exists() or not model_path.exists():
+        raise FileNotFoundError(
+            "Missing demo assets. Expected:\n"
+            f"- {trn_binary_path}\n"
+            f"- {model_path}\n\n"
+            "Set `DEEPHASH_SAVE_PATH` to a directory containing these files."
+        )
+
+    trn_binary = np.load(trn_binary_path)
+
+    print("加载模型中。。。。。。。")
+    model_state_dict = torch.load(model_path, map_location=device)
+    model = ResNet(64)  # 哈希码长度64
+    model.load_state_dict(model_state_dict)
+    model.eval()
+    print("模型加载成功")
 
 transform = transforms.Compose([transforms.Resize(224),
                                 transforms.ToTensor(),
@@ -123,6 +151,7 @@ def index():
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
+    _ensure_assets_loaded()
     f = request.files['file']
     f.save("areyouok.png")
     qB = detect("areyouok.png")
